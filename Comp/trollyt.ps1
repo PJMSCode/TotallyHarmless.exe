@@ -1,5 +1,5 @@
-# Standalone Trolltab Script with Fullscreen Video and Developer Escape
-# ---------------------------------------------------------------------
+# Standalone Trolltab Script with Fullscreen Video and Developer Escape (File Retained)
+# -------------------------------------------------------------------------------
 # This script performs the following:
 # 1. Plays a designated special video once (it will not be repeated).
 # 2. Enters an infinite loop to randomly select and play one of several YouTube videos.
@@ -13,7 +13,7 @@
 # - It then waits a random interval (5-10 minutes) before playing the next video.
 #
 # A developer escape function is provided: if the file "C:\dev_escape.txt" is created,
-# the script will immediately re-enable input and terminate.
+# the script will immediately re-enable input and terminate. The escape file will not be deleted.
 #
 # Note: This script requires youtube-dl to be installed and available in your system PATH.
 
@@ -40,7 +40,6 @@ $escapeTimer.Add_Elapsed({
         # Re-enable keyboard and mouse input (if blocked)
         [KeyboardDisabler]::BlockInput($false)
         Write-Host "Developer escape triggered. Exiting script..."
-        Remove-Item "C:\dev_escape.txt" -ErrorAction SilentlyContinue
         Stop-Process -Id $PID
     }
 })
