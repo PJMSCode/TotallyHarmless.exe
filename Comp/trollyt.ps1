@@ -1,21 +1,21 @@
-# Standalone Trolltab Script with Fullscreen Video and Developer Escape (File Retained)
-# -------------------------------------------------------------------------------
-# This script performs the following:
+# Standalone Trolltab Script with YouTube Kiosk Mode, Developer Escape, and HTML-based Duration Retrieval
+# -----------------------------------------------------------------------------------------------
+# This script:
 # 1. Plays a designated special video once (it will not be repeated).
 # 2. Enters an infinite loop to randomly select and play one of several YouTube videos.
 #
 # For each video:
-# - The script uses youtube-dl to retrieve the video's exact duration.
+# - The script retrieves the video's duration by downloading its YouTube page and parsing the HTML.
 # - It maximizes system volume by simulating "Volume Up" key presses.
 # - It disables both keyboard and mouse input (via BlockInput) so that user input is ignored.
-# - It launches Microsoft Edge in fullscreen mode using the --start-fullscreen parameter.
+# - It launches Microsoft Edge in kiosk mode (using the --kiosk parameter) so that YouTube displays in full-screen.
 # - It waits for the video's exact duration before re-enabling input.
 # - It then waits a random interval (5-10 minutes) before playing the next video.
 #
-# A developer escape function is provided: if the file "C:\dev_escape.txt" is created,
-# the script will immediately re-enable input and terminate. The escape file will not be deleted.
+# A developer escape function is provided: if the file "C:\dev_escape.txt" exists,
+# the script will immediately re-enable input and terminate (the file is not deleted).
 #
-# Note: This script requires youtube-dl to be installed and available in your system PATH.
+# Note: For reliable BlockInput, run this script as an administrator.
 
 # --- Load .NET type to disable keyboard and mouse input ---
 Add-Type -TypeDefinition @"
@@ -29,63 +29,50 @@ public class KeyboardDisabler {
 "@
 
 # --- Developer Escape Function ---
-# Check every second for the existence of "C:\dev_escape.txt".
-# If the file is found, re-enable input and terminate the script.
 $escapeTimer = New-Object System.Timers.Timer
 $escapeTimer.Interval = 1000
 $escapeTimer.AutoReset = $true
 $escapeTimer.Enabled = $true
 $escapeTimer.Add_Elapsed({
-    if (Test-Path "C:\dev_escape.txt") {
-        # Re-enable keyboard and mouse input (if blocked)
+    if (Test-Path "D:\dev_escape.txt") {
+        # Re-enable keyboard and mouse input
         [KeyboardDisabler]::BlockInput($false)
         Write-Host "Developer escape triggered. Exiting script..."
         Stop-Process -Id $PID
     }
 })
 
-# --- Function to Convert Duration String to Seconds ---
-function Convert-DurationToSeconds {
-    param(
-        [string]$durationString
-    )
-    $durationString = $durationString.Trim()
-    $parts = $durationString -split ":"
-    $seconds = 0
-    if ($parts.Length -eq 3) {
-        $hours = [int]$parts[0]
-        $minutes = [int]$parts[1]
-        $secs = [int]$parts[2]
-        $seconds = $hours * 3600 + $minutes * 60 + $secs
-    }
-    elseif ($parts.Length -eq 2) {
-        $minutes = [int]$parts[0]
-        $secs = [int]$parts[1]
-        $seconds = $minutes * 60 + $secs
-    }
-    else {
-        $seconds = [int]$durationString
-    }
-    return $seconds
-}
-
-# --- Function to Retrieve Video Duration using youtube-dl ---
+# --- Function to Retrieve Video Duration from YouTube Page ---
 function Get-VideoDuration {
     param(
         [string]$url
     )
     try {
-        $durationString = & youtube-dl --get-duration $url
-        if ($durationString) {
-            return Convert-DurationToSeconds $durationString
+        # Set a common User-Agent header to mimic a browser
+        $headers = @{
+            "User-Agent" = "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+        }
+        $response = Invoke-WebRequest -Uri $url -Headers $headers -UseBasicParsing -ErrorAction Stop
+        if ($response -and $response.Content) {
+            # Look for "lengthSeconds":"<number>" in the HTML
+            $regex = '"lengthSeconds":"(\d+)"'
+            $match = [regex]::Match($response.Content, $regex)
+            if ($match.Success) {
+                $seconds = [int]$match.Groups[1].Value
+                return $seconds
+            }
+            else {
+                Write-Host "Duration not found in HTML for $url. Using default duration of 180 seconds."
+                return 180
+            }
         }
         else {
-            Write-Host "Failed to get duration for $url. Using default duration of 180 seconds."
+            Write-Host "Failed to get HTML content for $url. Using default duration of 180 seconds."
             return 180
         }
     }
     catch {
-        Write-Host "Error retrieving duration for $url. Using default duration of 180 seconds."
+        Write-Host "Error retrieving duration for $url"
         return 180
     }
 }
@@ -100,24 +87,23 @@ function Play-Video {
     Write-Host "Playing video: $url"
     Write-Host "Duration: $duration seconds"
     
-    # Maximize system volume by sending "Volume Up" keys (simulate input)
+    # Maximize system volume by sending "Volume Up" keys
     $WshShell = New-Object -ComObject WScript.Shell
     for ($i = 0; $i -lt 50; $i++) {
         $WshShell.SendKeys([char]175)
         Start-Sleep -Milliseconds 100
     }
     
-    # Disable both keyboard and mouse input
+    # Disable keyboard and mouse input
     [KeyboardDisabler]::BlockInput($true)
     
-    # Launch Microsoft Edge in fullscreen mode with the given URL
-    # The "--start-fullscreen" argument forces Edge into fullscreen mode.
-    Start-Process "msedge.exe" "--start-fullscreen $url"
+    # Launch Microsoft Edge in kiosk mode (true full-screen for YouTube)
+    Start-Process "msedge.exe" "--kiosk $url"
     
     # Wait for the video's duration
     Start-Sleep -Seconds $duration
     
-    # Re-enable input (keyboard and mouse)
+    # Re-enable input
     [KeyboardDisabler]::BlockInput($false)
 }
 
