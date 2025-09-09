@@ -21,17 +21,17 @@ It’s like prankware for sysadmins, competitions, or classrooms — but each sc
 
 Scripts are organized into **tiers of chaos**:
 
-### Tier 2 – Disruptive (Annoying but Harmless)
+### 🟦 Tier 2 – Disruptive (Annoying but Harmless)
 - **TabTurbulence.ps1** – Jitters browser tab focus  
 - **SiteRoulette.ps1** – Opens random websites in new tabs  
 - **ForceNavigate.ps1** – Forces browser to navigate to set URLs  
 - **KeyMashLoop.(bat|ps1)** – Random keystroke injection simulation  
 
-### Tier 3 – Chaotic (Disorienting & Confusing)
+### 🟨 Tier 3 – Chaotic (Disorienting & Confusing)
 - **FocusFlicker.ps1** – Steals application focus repeatedly  
 - **YouTubeHijack.(bat|ps1)** – Forces YouTube popups and playback chaos  
 
-### Tier 4 – Malware Theatre (Educational Chaos)
+### 🟥 Tier 4 – Malware Theatre (Educational Chaos)
 - **FauxUpdate.ps1** – Simulates a fake Windows update screen  
 - **PersistenceDemo.ps1** – Demonstrates how scripts can stick around  
 - **AdminAbuse.bat** – Shows risk of privilege escalation abuse  
